@@ -12,6 +12,13 @@ namespace yoketoru_2016_6_17_2
 {
     public partial class Form1 : Form
     {
+        static Random rand = new Random();
+        //敵の最大速度
+        const float ENEMY_SPEED = 10f;
+        //アイテムの最大速度
+        const float ITEM_SPEED = 10f;
+        //アイテムの残り数
+        int iItemCount;
         enum SCENES
         {
             SC_NONE,       //無効
@@ -39,7 +46,7 @@ namespace yoketoru_2016_6_17_2
             CHRTYPE_NONE,
             CHRTYPE_PLAYER,
             CHRTYPE_ENEMY,
-            CHRTYPE_ITEM
+            CHRTYPE_ITEM,
         }
 
         /**キャラクタータイプ*/
@@ -100,7 +107,34 @@ namespace yoketoru_2016_6_17_2
                     px[0] = (ClientSize.Width - labels[0].Width) / 2;
                     py[0] = (ClientSize.Height - labels[0].Height) / 2;
                     labels[0].Left = (int)px[0];
-                    labels[0].Top = (int)py[0]; 
+                    labels[0].Top = (int)py[0];
+                    iItemCount = ITEM_MAX;
+
+                    //敵の初期化
+                    for (int i = 1; i < 1 + ENEMY_MAX; i++)
+                    {
+                        type[i] = CHRTYPE.CHRTYPE_ENEMY;
+                        vx[i] = (float)(rand.NextDouble()
+                            * (2 * ENEMY_SPEED) - ENEMY_SPEED);
+                        vy[i] = (float)(rand.NextDouble() 
+                            * (2 * ENEMY_SPEED) - ENEMY_SPEED);
+                        labels[i].Text = "●";
+                        px[i] = rand.Next(ClientSize.Width - labels[i].Width);
+                        py[i] = rand.Next(ClientSize.Height - labels[i].Height);
+                    }
+                    //アイテムの初期化
+                    for (int i = 1+ENEMY_MAX; i < CHR_MAX; i++)
+                    {
+                        type[i] = CHRTYPE.CHRTYPE_ITEM;
+                        vx[i] = (float)(rand.NextDouble()
+                            * (2 * ITEM_SPEED) - ITEM_SPEED);
+                        vy[i] = (float)(rand.NextDouble()
+                            * (2 * ITEM_SPEED) - ITEM_SPEED);
+                        labels[i].Text = "★";
+                        px[i] = rand.Next(ClientSize.Width - labels[i].Width);
+                        py[i] = rand.Next(ClientSize.Height - labels[i].Height);
+                    }
+
                     break;
             }
         }
@@ -142,10 +176,91 @@ namespace yoketoru_2016_6_17_2
                     case CHRTYPE.CHRTYPE_PLAYER:
                         updatePlayer(i);
                         break;
+                    case CHRTYPE.CHRTYPE_ENEMY:
+                        updateEnemy(i);
+                        break;
+                    case CHRTYPE.CHRTYPE_ITEM:
+                        updateItem(i);
+                        break;
                 }
 
             }
         }
+
+        /** 敵の更新処理*/
+        private void updateEnemy(int i)
+        {
+            constantMove(i);
+            if(hitPlayer(i))
+            {
+                nextScene = SCENES.SC_GAMEOVER;
+            }
+        }
+
+        /** アイテムの更新処理*/
+        private void updateItem(int i)
+        {
+            constantMove(i);
+            if(hitPlayer(i))
+            {
+                //アイテムを消す
+                type[i] = CHRTYPE.CHRTYPE_NONE;
+                //クリアチェック
+                iItemCount--;
+                if(iItemCount<=0)
+                {
+                    //アイテム全部取得
+                    nextScene = SCENES.SC_CLEAR;
+                }
+            }
+        }
+
+        /**
+         * プレイヤーとiがぶつかっているか？
+         * @return bool true = ぶつかっている / false = ぶつかっていない
+         */
+        private bool hitPlayer(int i)
+        {
+            if((px[0] < labels[i].Right)
+                && (px[i] < labels[0].Right)
+                && (py[0] < labels[i].Top)
+                && (py[i] < labels[0].Bottom)
+                )
+            {
+                return true;
+            }
+
+            return false; 
+            
+            
+        }
+        /** 等速直線運動でキャラを動かす*/
+        private void constantMove(int i)
+        {
+            px[i] += vx[i];
+            py[i] += vy[i];
+            /** 左跳ね返り*/
+            if(px[i] < 0)
+            {
+                vx[i] = Math.Abs(vx[i]);
+            }
+            /** 右跳ね返り*/
+            else if(px[i]>ClientSize.Width-labels[i].Width)
+            {
+                vx[i] = -Math.Abs(vx[i]);
+            }
+            /** 上跳ね返り*/
+            if (py[i] < 0)
+            {
+                vy[i] = Math.Abs(vy[i]);
+            }
+            /** 下跳ね返り*/
+            else if (py[i] > ClientSize.Height - labels[i].Height)
+            {
+                vy[i] = -Math.Abs(vy[i]);
+            }
+        }
+
         /** プレイヤーの更新処理*/
         private void updatePlayer(int i)
         {
